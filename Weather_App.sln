@@ -1,0 +1,68 @@
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Weather_App
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine(" <> Weather App <> ");
+            Console.WriteLine("Type 'exit' to quit.");
+
+            while (true)
+            {
+                Console.Write("Enter City:");
+                var city = Console.ReadLine()?.Trim();
+
+                if (string.IsNullOrEmpty(city))
+                    continue;
+
+                if (city.Equals("exit", StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                ShowWeather(city);
+            }
+            Console.WriteLine("Goodbye!");
+        }
+        static void ShowWeather(string city)
+        {
+            try
+            {
+                Task.Run(() => GetWeather(city)).Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}\n");
+            }
+        }
+
+        static async Task GetWeather(string city)
+        {
+            string apiKey = "f570c5dfa0b1e5819a5db6937c5a0de6";
+            string url = $"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+
+            using (var client = new HttpClient())
+            {
+                var res = await client.GetAsync(url);
+                if (!res.IsSuccessStatusCode)
+                    throw new Exception("Could not fetch weather data.");
+
+                var json = await res.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+
+                var weather = data["weather"][0];
+                var main = data["main"];
+                var wind = data["wind"];
+
+                Console.WriteLine($"\nWeather in {city}: {weather["main"]} ({weather["description"]})");
+                Console.WriteLine($"Temp: {main["temp"]}°C | Humidity: {main["humidity"]}% | Wind: {wind["speed"]} m/s\n");
+            }
+        }
+    }
+}
